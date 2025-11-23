@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="icon" type="image/png" href="../img/logo.png">
+    <title>AgroSystem - Bienvenida</title>
+    <link rel="stylesheet" href="src/css/index.css">
+</head>
+<body>
+    <div class="main-wrapper">
+        
+        <div class="panel-container">
+            
+            <div class="welcome-panel">
+                <h2 class="welcome-title">Bienvenido</h2>
+                <p class="welcome-message">
+                    "Con control y dedicación, tu ganado tendrá protección."
+                </p>
+            </div>
+            
+            <div class="login-panel">
+                <h1 class="logo-title">AGROSYSTEM</h1>
+                
+                <form id="loginForm">
+
+                    <div class="input-group">
+                        <span class="icon">👤</span>
+                        <input type="text" id="usuarioInput" placeholder="Ingrese su usuario" class="input-field">
+                    </div>
+
+                    <div class="input-group">
+                        <span class="icon">🔒</span>
+                        <input type="password" id="passwordInput" placeholder="Contraseña" class="input-field">
+                        <span class="toggle-eye">👁️</span>
+                    </div>
+
+                    <button type="submit" class="login-button">Iniciar sesión</button>
+
+                    <p class="register-text">
+                        ¿Aún no tienes una cuenta? 
+                        <a href="#" class="register-link">Registrarse</a>
+                    </p>
+
+                </form>
+            </div>
+            
+        </div>
+        
+    </div>
+    <script src="./src/js/login.js"></script>
+</body>
+</html>
