@@ -182,26 +182,13 @@ const alertaMessage = document.getElementById('alertaMessage');
 const btnAlertaOk = document.getElementById('btnAlertaOk');
 
 function mostrarAlerta(mensaje, tipo = 'info') {
-  // Configurar según el tipo de alerta
   alertaHeader.className = 'alerta-header ' + tipo;
   
   const config = {
-    error: {
-      icon: 'fa-exclamation-circle',
-      title: 'Error'
-    },
-    success: {
-      icon: 'fa-check-circle',
-      title: 'Éxito'
-    },
-    warning: {
-      icon: 'fa-exclamation-triangle',
-      title: 'Advertencia'
-    },
-    info: {
-      icon: 'fa-info-circle',
-      title: 'Información'
-    }
+    error: { icon: 'fa-exclamation-circle', title: 'Error' },
+    success: { icon: 'fa-check-circle', title: 'Éxito' },
+    warning: { icon: 'fa-exclamation-triangle', title: 'Advertencia' },
+    info: { icon: 'fa-info-circle', title: 'Información' }
   };
 
   const tipoConfig = config[tipo] || config.info;
@@ -220,13 +207,14 @@ function cerrarAlerta() {
 
 btnAlertaOk.addEventListener('click', cerrarAlerta);
 
-// Helper: resolver Id-Usuario numérico y construir cabeceras de autenticación
+// ===================================
+// HELPERS BACKEND
+// ===================================
+
 async function resolveUsuarioId(candidate) {
   if (candidate == null || candidate === '') return '';
-  // si ya es numérico, devolver número
   if (!isNaN(Number(candidate))) return Number(candidate);
 
-  // intentar obtener lista de usuarios y buscar coincidencia
   try {
     const token = localStorage.getItem('token') || '';
     const res = await fetch('http://100.30.25.253:7000/usuarios', {
@@ -262,12 +250,10 @@ async function getAuthHeaders() {
       const datos = JSON.parse(datosStr);
       idUsuarioCandidate = datos.usuario || datos.usuarioId || datos.idUsuario || datos.id || '';
     } catch (e) {
-      // si no es JSON, intentar usar valor crudo
       idUsuarioCandidate = datosStr;
     }
   }
 
-  // resolver a un valor numérico si es necesario
   const resolved = await resolveUsuarioId(idUsuarioCandidate);
   const idHeader = resolved !== '' ? String(resolved) : '';
 
@@ -278,25 +264,24 @@ async function getAuthHeaders() {
   };
 }
 
-// Enviar animal al backend
+// ===================================
+// CRUD BACKEND
+// ===================================
+
 async function sendAnimalToBackend(animal) {
   try {
     const headers = await getAuthHeaders();
-    // obtener idPropietario si existe en datosUsuarioAgroSystem (para payload)
     let idPropietario = null;
     const datosStr = localStorage.getItem('datosUsuarioAgroSystem') || sessionStorage.getItem('datosUsuarioAgroSystem') || null;
     if (datosStr) {
       try {
         const datos = JSON.parse(datosStr);
         idPropietario = datos.idPropietario || datos.idPropiertario || datos.id || datos.usuarioId || null;
-      } catch (e) {
-        // si no es JSON, ignorar
-      }
+      } catch (e) {}
     }
 
     const sexoBool = (() => {
       const s = (animal.sexo || '').toString().toLowerCase();
-      // Interpretación: valores que indican macho => true; hembra => false
       if (s === 'm' || s === 'macho' || s === 'male' || s === 'masculino' || s === 'true' || s === '1') return true;
       return false;
     })();
@@ -313,14 +298,12 @@ async function sendAnimalToBackend(animal) {
       sexo: sexoBool,
       idPadre: (animal.padreArete !== undefined && animal.padreArete !== null && String(animal.padreArete).trim() !== '' && !isNaN(Number(animal.padreArete))) ? Number(animal.padreArete) : null,
       idMadre: (animal.madreArete !== undefined && animal.madreArete !== null && String(animal.madreArete).trim() !== '' && !isNaN(Number(animal.madreArete))) ? Number(animal.madreArete) : null,
-      // Field name expected by the server
       idPropiertario: idPropietario
     };
 
-    // debug: mostrar payload en consola para diagnóstico
     console.debug('POST /animales payload', payload);
 
-    const res = await fetch('http://localhost:7001/animales', {
+    const res = await fetch('http://100.30.25.253:7000/animales', {
       method: 'POST',
       headers,
       body: JSON.stringify(payload)
@@ -332,14 +315,12 @@ async function sendAnimalToBackend(animal) {
     }
 
     const data = await res.json().catch(() => null);
-    console.debug('POST /animales response', data);
     return { success: true, data };
   } catch (err) {
     return { success: false, error: err.message || String(err) };
   }
 }
 
-// Obtener lista de animales desde el backend y mapear al formato local
 async function fetchAnimalsFromBackend() {
   try {
     const headers = await getAuthHeaders();
@@ -355,33 +336,24 @@ async function fetchAnimalsFromBackend() {
 
     const list = await res.json();
     console.debug('GET /animales response', list);
-    if (!Array.isArray(list)) {
-      throw new Error('Respuesta del servidor no es una lista');
-    }
+    if (!Array.isArray(list)) throw new Error('Respuesta del servidor no es una lista');
 
-    // Mantener exactamente lo que devuelve el backend
     animales = list;
-
     renderizarAnimales();
   } catch (err) {
     console.error('fetchAnimalsFromBackend error:', err);
     mostrarAlerta(`No se pudieron cargar los animales: ${err.message || err}`, 'error');
-    // Si falla, mantener la vista local vacía
     renderizarAnimales();
   }
 }
 
-// Actualizar animal en backend (PUT)
-// ahora acepta opcionalmente `routeId` para asegurarse que el id en el body
-// coincide con el id usado en la ruta (el backend lo requiere).
 async function updateAnimalBackend(animalTemp, routeId) {
   try {
     const headers = await getAuthHeaders();
     const id = routeId || animalTemp.idAnimal || animalTemp.id;
-    if (!id) throw new Error('Falta idAnimal para actualizar (asegúrate que el id esté en el objeto y/o en la ruta)');
+    if (!id) throw new Error('Falta idAnimal para actualizar');
 
     const payload = {
-      // Asegurar que idAnimal del body coincide con la ruta
       idAnimal: Number(id),
       nombreAnimal: animalTemp.nombre || '',
       numArete: animalTemp.numArete ? Number(animalTemp.numArete) : null,
@@ -391,14 +363,12 @@ async function updateAnimalBackend(animalTemp, routeId) {
       caracteristica: animalTemp.caracteristica || animalTemp.caracteristicas || '',
       edad: animalTemp.edad ? Number(animalTemp.edad) : null,
       procedencia: animalTemp.procedencia || '',
-      sexo: (animalTemp.sexo && (animalTemp.sexo === 'M' || animalTemp.sexo === 'm' || animalTemp.sexo === 'true')) ? true : false,
-      idPadre: (animalTemp.padreArete !== undefined && animalTemp.padreArete !== null && String(animalTemp.padreArete).trim() !== '' && !isNaN(Number(animalTemp.padreArete))) ? Number(animalTemp.padreArete) : null,
-      idMadre: (animalTemp.madreArete !== undefined && animalTemp.madreArete !== null && String(animalTemp.madreArete).trim() !== '' && !isNaN(Number(animalTemp.madreArete))) ? Number(animalTemp.madreArete) : null,
-      // Field name expected by the server
+      sexo: (animalTemp.sexo === 'M' || animalTemp.sexo === 'm' || animalTemp.sexo === 'true') ? true : false,
+      idPadre: (animalTemp.padreArete && !isNaN(Number(animalTemp.padreArete))) ? Number(animalTemp.padreArete) : null,
+      idMadre: (animalTemp.madreArete && !isNaN(Number(animalTemp.madreArete))) ? Number(animalTemp.madreArete) : null,
       idPropiertario: animalTemp.idPropietario ? Number(animalTemp.idPropietario) : null
     };
 
-    // debug: mostrar payload en consola para diagnóstico
     console.debug('PUT /animales/' + id + ' payload', payload);
 
     const res = await fetch(`http://100.30.25.253:7000/animales/${id}`, {
@@ -413,14 +383,12 @@ async function updateAnimalBackend(animalTemp, routeId) {
     }
 
     const data = await res.json().catch(() => null);
-    console.debug('PUT /animales response', data);
     return { success: true, data };
   } catch (err) {
     return { success: false, error: err.message || String(err) };
   }
 }
 
-// Eliminar animal en backend (DELETE)
 async function deleteAnimalBackend(id) {
   try {
     const headers = await getAuthHeaders();
@@ -433,14 +401,12 @@ async function deleteAnimalBackend(id) {
       const text = await res.text();
       throw new Error(text || 'Error al eliminar');
     }
-
     return { success: true };
   } catch (err) {
     return { success: false, error: err.message || String(err) };
   }
 }
 
-// Cerrar alerta con ESC
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && modalAlerta.classList.contains('active')) {
     cerrarAlerta();
@@ -448,8 +414,9 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ===================================
-// MODAL ADICIONAL SEGÚN REBAÑO
+// MODAL SECUNDARIO Y ELIMINAR
 // ===================================
+
 let modalSecundario = document.createElement('div');
 modalSecundario.classList.add('modal');
 modalSecundario.id = 'modalSecundario';
@@ -469,11 +436,8 @@ const camposSecundarios = document.getElementById('camposSecundarios');
 const btnGuardarSecundario = document.getElementById('btnGuardarSecundario');
 const btnCerrarSecundario = document.getElementById('btnCerrarSecundario');
 
-let animalTemp = {}; // Guardar temporalmente los datos del primer modal
+let animalTemp = {}; 
 
-// ===================================
-// MODAL DE ELIMINAR
-// ===================================
 const modalEliminar = document.createElement('div');
 modalEliminar.id = 'modalEliminarAnimal';
 modalEliminar.classList.add('modal-overlay');
@@ -507,39 +471,27 @@ modalEliminar.innerHTML = `
 document.body.appendChild(modalEliminar);
 
 // ===================================
-// FUNCIONES DE MODALES
+// LÓGICA DE INTERFAZ
 // ===================================
 
-// Abrir modal principal
 btnAgregar.addEventListener('click', () => {
   limpiarModal();
   modal.style.display = 'flex';
 });
 
-// Mostrar acciones CRUD sólo para admin en animales
 if (!isAdmin() && btnAgregar) {
   btnAgregar.style.display = 'none';
 }
 
-// Cerrar modal principal
 btnCerrarModal.addEventListener('click', () => modal.style.display = 'none');
-window.addEventListener('click', (e) => {
-  if (e.target === modal) modal.style.display = 'none';
-});
+window.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
 
-// Cerrar modal de visualizar
 btnCerrarVisualizar.addEventListener('click', () => modalVisualizar.style.display = 'none');
-window.addEventListener('click', (e) => {
-  if (e.target === modalVisualizar) modalVisualizar.style.display = 'none';
-});
+window.addEventListener('click', (e) => { if (e.target === modalVisualizar) modalVisualizar.style.display = 'none'; });
 
-// Cerrar modal secundario
 btnCerrarSecundario.addEventListener('click', () => modalSecundario.style.display = 'none');
-window.addEventListener('click', (e) => {
-  if (e.target === modalSecundario) modalSecundario.style.display = 'none';
-});
+window.addEventListener('click', (e) => { if (e.target === modalSecundario) modalSecundario.style.display = 'none'; });
 
-// Limpiar modal principal
 function limpiarModal() {
   inputNombre.value = '';
   inputNumArete.value = '';
@@ -549,9 +501,6 @@ function limpiarModal() {
   editIndex = null;
 }
 
-// ===================================
-// GUARDAR ANIMAL (PRIMER MODAL)
-// ===================================
 btnGuardar.addEventListener('click', () => {
   const nombre = inputNombre.value.trim();
   const numArete = inputNumArete.value.trim();
@@ -565,15 +514,10 @@ btnGuardar.addEventListener('click', () => {
   }
 
   animalTemp = { nombre, numArete, rebano, procedencia, sexo };
-
-  // Abrir modal secundario según el rebaño
   abrirModalSecundario(rebano);
   modal.style.display = 'none';
 });
 
-// ===================================
-// MODAL SECUNDARIO SEGÚN REBAÑO
-// ===================================
 function abrirModalSecundario(rebano) {
   camposSecundarios.innerHTML = '';
   camposSecundarios.innerHTML += `
@@ -587,19 +531,13 @@ function abrirModalSecundario(rebano) {
     <h3>Madre</h3>
     <label>Número de Arete:</label><input type="text" id="madreArete">
   `;
-  // No agregar campos específicos de razas; enviar solamente los campos que espera el backend
-
   modalSecundario.style.display = 'flex';
 }
 
-// ===================================
-// GUARDAR MODAL SECUNDARIO
-// ===================================
 btnGuardarSecundario.addEventListener('click', () => {
   const nombreSec = document.getElementById('nombreSecundario') ? document.getElementById('nombreSecundario').value.trim() : null;
-  if (nombreSec !== null && nombreSec !== '') {
-    animalTemp.nombre = nombreSec;
-  }
+  if (nombreSec !== null && nombreSec !== '') animalTemp.nombre = nombreSec;
+  
   const fechaNacimiento = document.getElementById('fechaNacimiento').value;
   const edad = document.getElementById('edad').value;
   const peso = document.getElementById('peso').value;
@@ -614,31 +552,25 @@ btnGuardarSecundario.addEventListener('click', () => {
   animalTemp.padreArete = padreArete;
   animalTemp.madreArete = madreArete;
 
-  // No recoger campos específicos de razas; el backend no los espera
-
   if(editIndex !== null){
-    // Actualizar en backend
-    // pasar el id que se usará en la ruta para que body.idAnimal coincida
     const routeId = animales[editIndex] && (animales[editIndex].idAnimal || animales[editIndex].id) ? (animales[editIndex].idAnimal || animales[editIndex].id) : animalTemp.idAnimal || animalTemp.id;
     updateAnimalBackend(animalTemp, routeId)
       .then(resp => {
         if (resp.success) {
-          // reemplazar en la lista local con la respuesta del backend si viene
           if (resp.data) {
             animales[editIndex] = resp.data;
           } else {
-            // si no devuelve, actualizar campos locales basados en animalTemp
             animales[editIndex] = {
               ...animales[editIndex],
               nombreAnimal: animalTemp.nombre,
               numArete: Number(animalTemp.numArete),
               'rebaño': animalTemp.rebano,
               fechaNacimiento: animalTemp.fechaNacimiento,
-              pesoInicial: animalTemp.pesoInicial != null ? Number(animalTemp.pesoInicial) : null,
-              caracteristica: animalTemp.caracteristica || '',
-              edad: animalTemp.edad != null ? Number(animalTemp.edad) : null,
-              idPadre: animalTemp.padreArete ? Number(animalTemp.padreArete) : null,
-              idMadre: animalTemp.madreArete ? Number(animalTemp.madreArete) : null,
+              pesoInicial: animalTemp.pesoInicial,
+              caracteristica: animalTemp.caracteristica,
+              edad: animalTemp.edad,
+              idPadre: animalTemp.padreArete,
+              idMadre: animalTemp.madreArete,
               procedencia: animalTemp.procedencia,
               sexo: (animalTemp.sexo === 'M')
             };
@@ -650,33 +582,14 @@ btnGuardarSecundario.addEventListener('click', () => {
           mostrarAlerta(`Error al actualizar en servidor: ${resp.error}`, 'error');
         }
       })
-      .catch(err => {
-        mostrarAlerta(`Error en la petición: ${err.message || err}`, 'error');
-      });
+      .catch(err => mostrarAlerta(`Error en la petición: ${err.message || err}`, 'error'));
   } else {
-    // Enviar al backend primero. Si es exitoso, usar lo que devuelve el backend para pintar
     sendAnimalToBackend(animalTemp)
       .then(resp => {
         if (resp.success) {
-          // preferir los datos que regresa el backend
-          if (resp.data) {
-            animales.push(resp.data);
-          } else {
-              animales.push({
-                idAnimal: resp.data && resp.data.idAnimal ? resp.data.idAnimal : null,
-                nombreAnimal: animalTemp.nombre,
-                numArete: animalTemp.numArete ? Number(animalTemp.numArete) : null,
-                'rebaño': animalTemp.rebano,
-                fechaNacimiento: animalTemp.fechaNacimiento,
-                pesoInicial: animalTemp.pesoInicial != null ? Number(animalTemp.pesoInicial) : null,
-                caracteristica: animalTemp.caracteristica || '',
-                idPadre: animalTemp.padreArete ? Number(animalTemp.padreArete) : null,
-                idMadre: animalTemp.madreArete ? Number(animalTemp.madreArete) : null,
-                edad: animalTemp.edad != null ? Number(animalTemp.edad) : null,
-                procedencia: animalTemp.procedencia,
-                sexo: (animalTemp.sexo === 'M')
-              });
-          }
+          if (resp.data) animales.push(resp.data);
+          else fetchAnimalsFromBackend(); // Recargar si no devuelve el objeto completo
+          
           mostrarAlerta(`El animal "${animalTemp.nombre}" ha sido registrado exitosamente.`, 'success');
           modalSecundario.style.display = 'none';
           renderizarAnimales();
@@ -684,19 +597,12 @@ btnGuardarSecundario.addEventListener('click', () => {
           mostrarAlerta(`Error al registrar en servidor: ${resp.error}`, 'error');
         }
       })
-      .catch(err => {
-        mostrarAlerta(`Error en la petición: ${err.message || err}`, 'error');
-      });
+      .catch(err => mostrarAlerta(`Error en la petición: ${err.message || err}`, 'error'));
   }
-
 });
 
-// ===================================
-// FUNCIONES DEL MODAL DE ELIMINAR
-// ===================================
 function abrirModalEliminar(animal) {
   animalAEliminar = animal;
-  // Usar campos que proporciona el backend
   document.getElementById('mensajeEliminarAnimal').textContent = 
     `Se eliminará el animal "${animal.nombreAnimal || ''}" (Arete: ${animal.numArete || ''}).`;
   document.getElementById('modalEliminarAnimal').classList.add('active');
@@ -709,42 +615,37 @@ function cerrarModalEliminar() {
   animalAEliminar = null;
 }
 
+window.cerrarModalEliminar = cerrarModalEliminar;
+
 function confirmarEliminarAnimal() {
   if (animalAEliminar) {
     const id = animalAEliminar.idAnimal || animalAEliminar.id || null;
-    // Llamar al backend para eliminar
     if (id) {
       deleteAnimalBackend(id)
         .then(resp => {
           if (resp.success) {
-            // Guardar información para la alerta antes de limpiar la referencia
-            const nombreAlert = animalAEliminar && (animalAEliminar.nombreAnimal || animalAEliminar.nombre) ? (animalAEliminar.nombreAnimal || animalAEliminar.nombre) : '';
-            const areteAlert = animalAEliminar && (animalAEliminar.numArete != null) ? animalAEliminar.numArete : '';
             const idx = animales.indexOf(animalAEliminar);
             if (idx > -1) animales.splice(idx, 1);
             renderizarAnimales();
             cerrarModalEliminar();
-            mostrarAlerta(`El animal "${nombreAlert}" (Arete: ${areteAlert}) ha sido eliminado exitosamente.`, 'success');
+            mostrarAlerta(`Animal eliminado exitosamente.`, 'success');
           } else {
-            mostrarAlerta(`Error al eliminar en servidor: ${resp.error}`, 'error');
+            mostrarAlerta(`Error al eliminar: ${resp.error}`, 'error');
           }
         })
-        .catch(err => mostrarAlerta(`Error en la petición: ${err.message || err}`, 'error'));
+        .catch(err => mostrarAlerta(`Error: ${err.message || err}`, 'error'));
     } else {
-      // Si no tiene id, eliminar localmente
-      const nombreAlert = animalAEliminar && (animalAEliminar.nombreAnimal || animalAEliminar.nombre) ? (animalAEliminar.nombreAnimal || animalAEliminar.nombre) : '';
-      const areteAlert = animalAEliminar && (animalAEliminar.numArete != null) ? animalAEliminar.numArete : '';
-      const idx = animales.indexOf(animalAEliminar);
-      if (idx > -1) animales.splice(idx, 1);
-      renderizarAnimales();
-      cerrarModalEliminar();
-      mostrarAlerta(`El animal "${nombreAlert}" (Arete: ${areteAlert}) ha sido eliminado localmente.`, 'success');
+        const idx = animales.indexOf(animalAEliminar);
+        if (idx > -1) animales.splice(idx, 1);
+        renderizarAnimales();
+        cerrarModalEliminar();
     }
   }
 }
+window.confirmarEliminarAnimal = confirmarEliminarAnimal;
 
 // ===================================
-// RENDERIZAR ANIMALES
+// RENDERIZAR ANIMALES (ESTILO MEJORADO)
 // ===================================
 function renderizarAnimales(lista = animales){
   tablaAnimales.innerHTML = '';
@@ -769,18 +670,20 @@ function renderizarAnimales(lista = animales){
   const tbody = tabla.querySelector('tbody');
   lista.forEach(animal => {
     const fila = document.createElement('tr');
+    
+    // Iconos FontAwesome en lugar de emojis
     fila.innerHTML = `
       <td>${animal.nombreAnimal || ''}</td>
       <td>${animal.numArete || ''}</td>
       <td>${animal.sexo ? 'M' : 'H'}</td>
       <td>
-        <button class="btn-ver" title="Ver detalles">👁️</button>
-        <button class="btn-editar" title="Editar">✏️</button>
-        <button class="btn-eliminar" title="Eliminar">🗑️</button>
+        <button class="btn-ver" title="Ver detalles"><i class="fa-solid fa-eye"></i></button>
+        <button class="btn-editar" title="Editar"><i class="fa-solid fa-pencil"></i></button>
+        <button class="btn-eliminar" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
       </td>
     `;
 
-    // VISUALIZAR
+    // VISUALIZAR CON BLOQUES DIV SEPARADOS
     fila.querySelector('.btn-ver').addEventListener('click', () => {
       const f = animal.fechaNacimiento;
       let fecha = '';
@@ -794,28 +697,62 @@ function renderizarAnimales(lista = animales){
       }
 
       console.debug('View animal:', animal);
+      
+      // Aquí usamos la estructura correcta para el CSS
       let html = `
         <div class="detalle-item">
           <strong>Nombre:</strong>
-          <p>${animal.nombreAnimal || ''}</p>
+          <p>${animal.nombreAnimal || 'Sin nombre'}</p>
+        </div>
+
+        <div class="detalle-item">
           <strong>Número de Arete:</strong>
-          <p>${animal.numArete || ''}</p>
+          <p>${animal.numArete || 'N/A'}</p>
+        </div>
+
+        <div class="detalle-item">
           <strong>Sexo:</strong>
-          <p>${animal.sexo ? 'M' : 'H'}</p>
+          <p>${animal.sexo ? 'Macho' : 'Hembra'}</p>
+        </div>
+
+        <div class="detalle-item">
           <strong>Rebaño:</strong>
-          <p>${animal['rebaño'] || ''}</p>
+          <p>${animal['rebaño'] || 'N/A'}</p>
+        </div>
+
+        <div class="detalle-item">
           <strong>Procedencia:</strong>
-          <p>${animal.procedencia || ''}</p>
+          <p>${animal.procedencia || 'N/A'}</p>
+        </div>
+
+        <div class="detalle-item">
           <strong>Fecha Nacimiento:</strong>
-          <p>${fecha}</p>
+          <p>${fecha || '--/--/----'}</p>
+        </div>
+
+        <div class="detalle-item">
           <strong>Edad:</strong>
-          <p>${animal.edad != null ? animal.edad : ''}</p>
-          <strong>Peso:</strong>
-          <p>${animal.pesoInicial != null ? animal.pesoInicial : ''}</p>
+          <p>${animal.edad != null ? animal.edad : 'No registrada'}</p>
+        </div>
+
+        <div class="detalle-item">
+          <strong>Peso Inicial:</strong>
+          <p>${animal.pesoInicial != null ? animal.pesoInicial + ' kg' : 'No registrado'}</p>
+        </div>
+
+        <div class="detalle-item">
           <strong>Características:</strong>
-          <p>${animal.caracteristica || ''}</p>
-          <div><strong>Padre (id):</strong><p>${animal.idPadre != null ? animal.idPadre : ''}</p></div>
-          <div><strong>Madre (id):</strong><p>${animal.idMadre != null ? animal.idMadre : ''}</p></div>
+          <p>${animal.caracteristica || 'Ninguna'}</p>
+        </div>
+
+        <div class="detalle-item">
+          <strong>Padre (Arete):</strong>
+          <p>${animal.idPadre || 'No registrado'}</p>
+        </div>
+
+        <div class="detalle-item">
+          <strong>Madre (Arete):</strong>
+          <p>${animal.idMadre || 'No registrado'}</p>
         </div>
       `;
 
@@ -825,7 +762,6 @@ function renderizarAnimales(lista = animales){
 
     // EDITAR
     fila.querySelector('.btn-editar').addEventListener('click', () => {
-      // llenar campos del primer modal
       inputNombre.value = animal.nombreAnimal || '';
       inputNumArete.value = animal.numArete != null ? String(animal.numArete) : '';
       selectRebano.value = animal['rebaño'] || '';
@@ -833,16 +769,13 @@ function renderizarAnimales(lista = animales){
       selectSexo.value = animal.sexo ? 'M' : 'H';
       editIndex = animales.indexOf(animal);
 
-      // Mapear al formato que usa el formulario y las funciones de envío
       animalTemp = {
         idAnimal: animal.idAnimal != null ? animal.idAnimal : null,
         nombre: animal.nombreAnimal || '',
         numArete: animal.numArete != null ? String(animal.numArete) : '',
         rebano: animal['rebaño'] || '',
         procedencia: animal.procedencia || '',
-        sexo: animal.sexo ? 'M' : 'H'
-        ,
-        // prefijar los aretes de padres para mantener valores si no se modifican
+        sexo: animal.sexo ? 'M' : 'H',
         padreArete: animal.idPadre != null ? String(animal.idPadre) : '',
         madreArete: animal.idMadre != null ? String(animal.idMadre) : ''
       };
@@ -850,7 +783,6 @@ function renderizarAnimales(lista = animales){
       abrirModalSecundario(animal['rebaño']);
 
       setTimeout(() => {
-        // fecha puede venir como array
         const f = animal.fechaNacimiento;
         if (Array.isArray(f) && f.length >= 3) {
           const y = String(f[0]).padStart(4,'0');
@@ -863,7 +795,6 @@ function renderizarAnimales(lista = animales){
         document.getElementById('edad').value = animal.edad != null ? animal.edad : '';
         document.getElementById('peso').value = animal.pesoInicial != null ? animal.pesoInicial : '';
         document.getElementById('caracteristicas').value = animal.caracteristica || '';
-        // precargar nombre en modal secundario si existe
         if (document.getElementById('nombreSecundario')) {
           document.getElementById('nombreSecundario').value = animal.nombreAnimal || '';
         }
@@ -874,7 +805,6 @@ function renderizarAnimales(lista = animales){
       modalSecundario.style.display = 'flex';
     });
 
-    // Mostrar/ocultar botones según rol: solo admin puede editar/eliminar animales
     if (!isAdmin()) {
       const btnEdit = fila.querySelector('.btn-editar'); if (btnEdit) btnEdit.style.display = 'none';
       const btnDel = fila.querySelector('.btn-eliminar'); if (btnDel) btnDel.style.display = 'none';
@@ -900,7 +830,6 @@ buscador.addEventListener('input', () => {
   renderizarAnimales(resultados);
 });
 
-// Cerrar modal de eliminar con ESC o click fuera
 window.addEventListener('click', (e) => {
   const modalElim = document.getElementById('modalEliminarAnimal');
   if (e.target === modalElim) {
@@ -908,5 +837,4 @@ window.addEventListener('click', (e) => {
   }
 });
 
-// Inicializar tabla: cargar desde backend
 fetchAnimalsFromBackend();

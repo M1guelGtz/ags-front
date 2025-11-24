@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="icon" type="image/png" href="../img/logo.png">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <title>AgroSystem - Bienvenida</title>
     <link rel="stylesheet" href="src/css/index.css">
 </head>
@@ -25,16 +26,23 @@
                 <form id="loginForm">
 
                     <div class="input-group">
-                        <span class="icon">👤</span>
+                        <span class="icon">
+                            <i class="fa-solid fa-user"></i>
+                        </span>
                         <input type="text" id="usuarioInput" placeholder="Ingrese su usuario" class="input-field">
                     </div>
 
                     <div class="input-group">
-                        <span class="icon">🔒</span>
+                        <span class="icon">
+                            <i class="fa-solid fa-lock"></i>
+                        </span>
+                        
                         <input type="password" id="passwordInput" placeholder="Contraseña" class="input-field">
-                        <span class="toggle-eye">👁️</span>
+                        
+                        <span class="toggle-eye" onclick="togglePassword()">
+                            <i class="fa-solid fa-eye" id="eyeIcon"></i>
+                        </span>
                     </div>
-
                     <button type="submit" class="login-button">Iniciar sesión</button>
 
                     <p class="register-text">

@@ -421,6 +421,17 @@ body {
   
   
 }
+.detalle-item {
+  margin-bottom: 15px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.detalle-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
 .detalle-item strong {
   display: block;
   color: rgba(114, 158, 100, 1);
@@ -428,4 +439,11 @@ body {
   margin-bottom: 5px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.detalle-item p {
+  margin: 0;
+  color: #333;
+  font-size: 1rem;
+  line-height: 1.5;
 }

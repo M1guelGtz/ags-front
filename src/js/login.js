@@ -9,28 +9,35 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Seleccionar elementos del DOM
     const form = document.getElementById('loginForm');
-    const toggleEye = document.querySelector('.toggle-eye');
+    // El span que envuelve al icono (el botón clicable)
+    const toggleEye = document.querySelector('.toggle-eye'); 
+    // El icono específico de FontAwesome (necesita tener id="eyeIcon" en el HTML)
+    const eyeIcon = document.getElementById('eyeIcon'); 
+    
     const passwordInput = document.getElementById('passwordInput');
     const userInput = document.getElementById('usuarioInput');
     const loginButton = document.querySelector('.login-button');
     
-    // Estado del ojo (visible/oculto)
-    let passwordVisible = false;
-    
-    // Función para alternar visibilidad de contraseña
-    if (toggleEye) {
+    // --- LÓGICA MODIFICADA PARA ICONOS FONT AWESOME ---
+    if (toggleEye && eyeIcon) {
         toggleEye.addEventListener('click', function() {
-            passwordVisible = !passwordVisible;
-            
-            if (passwordVisible) {
+            // Verificamos el tipo actual del input
+            if (passwordInput.type === 'password') {
+                // Mostrar contraseña
                 passwordInput.type = 'text';
-                toggleEye.textContent = '👁️‍🗨️';
+                // Cambiar icono: quitamos ojo, ponemos ojo tachado
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
             } else {
+                // Ocultar contraseña
                 passwordInput.type = 'password';
-                toggleEye.textContent = '👁️';
+                // Cambiar icono: quitamos ojo tachado, ponemos ojo normal
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
             }
         });
     }
+    // --------------------------------------------------
     
     // Validación y envío del formulario
     form.addEventListener('submit', function(e) {
@@ -71,6 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const text = await res.text();
                 let data = null;
                 try{ data = text ? JSON.parse(text) : null; }catch(e){ data = text; }
+                
                 if(!res.ok){
                     const msg = (data && data.message) ? data.message : `Error ${res.status}`;
                     mostrarAlerta(msg, 'error');
@@ -87,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         sessionStorage.setItem('token', data.token);
                     }
                     if(data.usuario){
-                        // Enriquecer el objeto usuario con un campo legible de rol para evitar nulls en la UI
+                        // Enriquecer el objeto usuario
                         try{
                             const usuarioObj = Object.assign({}, data.usuario);
                             if (usuarioObj.rol && typeof usuarioObj.rol === 'object') {
@@ -145,5 +153,4 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = './src/pages/registrarse.html';
         });
     }
-    
 });

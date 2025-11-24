@@ -2,10 +2,24 @@ const formRegistro = document.getElementById('formRegistro');
 const togglePassword = document.getElementById('togglePassword');
 const inputContrasena = document.getElementById('contrasena');
 
+// NUEVO: Seleccionamos el icono específico (Asegúrate que tu HTML tenga id="eyeIconRegistro")
+const eyeIcon = document.getElementById('eyeIconRegistro');
+
 togglePassword.addEventListener('click', () => {
+    // Cambiar tipo de input
     const tipo = inputContrasena.type === 'password' ? 'text' : 'password';
     inputContrasena.type = tipo;
-    togglePassword.textContent = tipo === 'password' ? '👁️' : '👁️‍🗨️';
+
+    // NUEVA LÓGICA: Cambiar iconos de Font Awesome
+    if (tipo === 'text') {
+        // Si se ve el texto -> Ojo tachado
+        eyeIcon.classList.remove('fa-eye');
+        eyeIcon.classList.add('fa-eye-slash');
+    } else {
+        // Si es password -> Ojo normal
+        eyeIcon.classList.remove('fa-eye-slash');
+        eyeIcon.classList.add('fa-eye');
+    }
 });
 
 function mostrarMensaje(mensaje, tipo) {
