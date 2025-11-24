@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Verificar si ya hay una sesión activa
     const usuarioGuardado = localStorage.getItem('usuarioAgroSystem');
     if (usuarioGuardado) {
-        window.location.href = './ags-front/src/pages/home.html';
+        window.location.href = '/ags-front/src/pages/home.html';
         return;
     }
     
@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             try{ sessionStorage.setItem('datosUsuarioAgroSystem', JSON.stringify(data.usuario)); localStorage.setItem('datosUsuarioAgroSystem', JSON.stringify(data.usuario)); }catch(e){}
                         }
                     }
-                    setTimeout(()=>{ window.location.href = './ags-front/src/pages/home.html'; }, 800);
+                    setTimeout(()=>{ window.location.href = '/ags-front/src/pages/home.html'; }, 800);
                 } else {
                     const msg = (data && data.message) ? data.message : 'Credenciales inválidas';
                     mostrarAlerta(msg, 'error');
@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (registerLink) {
         registerLink.addEventListener('click', function(e) {
             e.preventDefault();
-            window.location.href = './ags-front/src/pages/registrarse.html';
+            window.location.href = '/ags-front/src/pages/registrarse.html';
         });
     }
 });

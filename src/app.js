@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Verificar si ya hay una sesión activa
     const usuarioGuardado = localStorage.getItem('usuarioAgroSystem');
     if (usuarioGuardado) {
-        window.location.href = './ags-front/src/pages/home.html';
+        window.location.href = '/ags-front/src/pages/home.html';
         return;
     }
     
@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 localStorage.setItem('datosUsuarioAgroSystem', JSON.stringify(datosUsuario));
                 
                 setTimeout(() => {
-                    window.location.href = './ags-front/src/pages/home.html';
+                    window.location.href = '/ags-front/src/pages/home.html';
                 }, 1500);
             } else {
                 // Verificar usuarios registrados
@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     localStorage.setItem('datosUsuarioAgroSystem', JSON.stringify(datosUsuario));
                     
                     setTimeout(() => {
-                        window.location.href = './ags-front/src/pages/home.html';
+                        window.location.href = '/ags-front/src/pages/home.html';
                     }, 1500);
                 } else {
                     mostrarAlerta('Usuario o contraseña incorrectos', 'error');
@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (registerLink) {
             registerLink.addEventListener('click', function(e) {
             e.preventDefault();
-            window.location.href = './ags-front/src/pages/registrarse.html';
+            window.location.href = './/ags-front/src/pages/registrarse.html';
         });
     }
     
