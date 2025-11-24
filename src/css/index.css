@@ -13,7 +13,7 @@ body {
     align-items: center;
     min-height: 100vh;
     
-    background-image: url('ags-front/src/img/Menu.jpg');
+    background-image: url('../img/Menu.jpg');
     background-size: cover;
     background-position: center;
     background-attachment: fixed; 
